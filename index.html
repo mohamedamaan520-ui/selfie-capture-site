@@ -1,28 +1,47 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Selfie Capture</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Selfie Capture • Secure Camera</title>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 20% 20%,#6d4aff 0,#171329 38%,#05050a 100%);color:#fff}
-.card{width:min(92vw,520px);padding:34px;border:1px solid #ffffff2b;border-radius:30px;background:#ffffff12;backdrop-filter:blur(20px);box-shadow:0 30px 80px #0008;text-align:center}
-h1{font-size:38px;margin:0 0 10px}p{color:#c9c5d9;line-height:1.5}.start{border:0;border-radius:999px;padding:17px 34px;font-size:18px;font-weight:800;color:white;background:linear-gradient(135deg,#8b5cf6,#06b6d4);cursor:pointer;box-shadow:0 12px 35px #0006}
-video,canvas{width:100%;border-radius:22px;margin-top:20px;display:none}.status{margin-top:18px;color:#d9d4e8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;overflow-x:hidden;font-family:Inter,system-ui,sans-serif;color:#fff;background:#05030d}
+body:before,body:after{content:"";position:fixed;width:38vw;height:38vw;border-radius:50%;filter:blur(70px);opacity:.45;z-index:-1}
+body:before{background:#7c3aed;top:-12vw;left:-8vw}body:after{background:#06b6d4;right:-10vw;bottom:-12vw}
+.wrap{min-height:100vh;display:grid;place-items:center;padding:24px}.card{width:min(94vw,620px);padding:clamp(24px,5vw,44px);border:1px solid #ffffff24;border-radius:34px;background:linear-gradient(145deg,#ffffff18,#ffffff08);backdrop-filter:blur(24px);box-shadow:0 35px 100px #0009;text-align:center;transform:perspective(1000px) rotateX(1deg)}
+.badge{display:inline-flex;padding:8px 13px;border:1px solid #ffffff25;border-radius:99px;background:#ffffff0d;color:#c9c4dd;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:clamp(36px,8vw,64px);line-height:.95;margin:20px 0 14px;letter-spacing:-.05em}h1 span{background:linear-gradient(90deg,#a78bfa,#22d3ee);-webkit-background-clip:text;color:transparent}
+p{max-width:470px;margin:0 auto;color:#c8c2d8;line-height:1.6}.stage{margin-top:24px;position:relative}.media{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:25px;background:#000;display:none;border:1px solid #ffffff20;box-shadow:inset 0 0 40px #000}
+video{transform:scaleX(-1)}canvas{display:none}.start{margin-top:24px;border:0;border-radius:999px;padding:17px 34px;font-size:17px;font-weight:850;color:white;background:linear-gradient(135deg,#8b5cf6,#06b6d4);cursor:pointer;box-shadow:0 14px 40px #0007;transition:.2s}.start:hover{transform:translateY(-2px);filter:brightness(1.08)}.start:disabled{opacity:.55;cursor:wait}.status{min-height:24px;margin-top:17px;color:#ddd7ed;font-size:14px}.note{margin-top:18px;font-size:11px;color:#8f89a2}
 </style>
 </head>
-<body>
-<main class="card">
-<h1>Selfie Capture</h1>
-<p>Press START to allow camera access. Your browser will ask for permission before the selfie camera opens.</p>
-<button class="start" id="start">START</button>
-<video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
-<div class="status" id="status"></div>
-</main>
+<body><div class="wrap"><main class="card">
+<div class="badge">Camera • Permission Required</div>
+<h1>Your <span>Selfie</span><br>Starts Here</h1>
+<p>Press START to request camera permission. After you allow access, the front camera opens and one selfie is captured automatically.</p>
+<div class="stage"><video id="video" class="media" autoplay playsinline muted></video><canvas id="canvas" class="media"></canvas></div>
+<button id="start" class="start">START CAMERA</button>
+<div id="status" class="status">Ready</div>
+<div class="note">Your browser controls camera permission. Nothing is captured before you press START.</div>
+</main></div>
 <script>
 const start=document.getElementById('start'),video=document.getElementById('video'),canvas=document.getElementById('canvas'),status=document.getElementById('status');
-start.onclick=async()=>{try{status.textContent='Requesting camera permission…';const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});video.srcObject=stream;video.style.display='block';status.textContent='Camera ready. Capturing…';await new Promise(r=>setTimeout(r,1000));canvas.width=video.videoWidth;canvas.height=video.videoHeight;canvas.getContext('2d').drawImage(video,0,0);canvas.style.display='block';stream.getTracks().forEach(t=>t.stop());status.textContent='Photo captured successfully.';}catch(e){status.textContent='Camera permission was denied or unavailable.';}};
-</script>
-</body>
-</html>
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+start.addEventListener('click',async()=>{
+ start.disabled=true;
+ try{
+  if(!navigator.mediaDevices?.getUserMedia) throw new Error('Camera API unavailable');
+  status.textContent='Requesting camera permission…';
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'user'},width:{ideal:1280},height:{ideal:960}},audio:false});
+  video.srcObject=stream;video.style.display='block';await video.play();status.textContent='Camera ready…';
+  await wait(1200);
+  canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||960;
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  canvas.style.display='block';video.style.display='none';
+  stream.getTracks().forEach(t=>t.stop());
+  status.textContent='Photo captured successfully ✓';
+ }catch(err){
+  status.textContent=err.name==='NotAllowedError'?'Camera permission was denied. Please allow camera access and try again.':'Camera unavailable on this device/browser.';
+  start.disabled=false;
+ }
+});
+</script></body></html>
